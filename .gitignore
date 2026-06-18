@@ -8,6 +8,7 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.tmp_packages/
 .coverage
 htmlcov/
 chroma_db*/
