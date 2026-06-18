@@ -48,5 +48,20 @@ def test_format_context_sorts_deduplicates_and_attributes_sources():
     assert "Relevance: 0.900" in context
 
 
+def test_prepared_sources_match_context_citation_order():
+    documents = ["Later excerpt", "Best excerpt", "Best excerpt"]
+    metadata = [
+        {"source": "later"},
+        {"source": "best"},
+        {"source": "duplicate"},
+    ]
+
+    sources = rag_client.prepare_retrieved_sources(documents, metadata, [0.4, 0.1, 0.2])
+
+    assert [source["document"] for source in sources] == ["Best excerpt", "Later excerpt"]
+    assert [source["metadata"]["source"] for source in sources] == ["best", "later"]
+    assert [source["distance"] for source in sources] == [0.1, 0.4]
+
+
 def test_discover_backends_returns_empty_for_missing_root():
     assert rag_client.discover_chroma_backends("definitely-not-a-real-directory") == {}

@@ -153,6 +153,11 @@ def main() -> None:
                 documents = (result.get("documents") or [[]])[0]
                 metadatas = (result.get("metadatas") or [[]])[0]
                 distances = (result.get("distances") or [[]])[0]
+                sources = rag_client.prepare_retrieved_sources(
+                    documents,
+                    metadatas,
+                    distances,
+                )
                 context = rag_client.format_context(documents, metadatas, distances)
                 response = llm_client.generate_response(
                     openai_key,
@@ -167,10 +172,6 @@ def main() -> None:
                 return
 
         st.markdown(response)
-        sources = [
-            {"document": document, "metadata": metadata}
-            for document, metadata in zip(documents, metadatas, strict=False)
-        ]
         assistant_turn: dict[str, Any] = {
             "role": "assistant",
             "content": response,
@@ -183,7 +184,7 @@ def main() -> None:
                 scores = ragas_evaluator.evaluate_response_quality(
                     prompt,
                     response,
-                    documents,
+                    [context],
                     api_key=openai_key,
                 )
             assistant_turn["evaluation"] = scores

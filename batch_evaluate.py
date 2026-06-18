@@ -94,12 +94,17 @@ def run_batch(
             documents = (retrieved.get("documents") or [[]])[0]
             metadatas = (retrieved.get("metadatas") or [[]])[0]
             distances = (retrieved.get("distances") or [[]])[0]
+            sources = rag_client.prepare_retrieved_sources(
+                documents,
+                metadatas,
+                distances,
+            )
             context = rag_client.format_context(documents, metadatas, distances)
             answer = llm_client.generate_response(api_key, item["question"], context, [], model)
             scores = ragas_evaluator.evaluate_response_quality(
                 item["question"],
                 answer,
-                documents,
+                [context],
                 reference_answer=item["reference_answer"],
                 api_key=api_key,
             )
@@ -107,8 +112,9 @@ def run_batch(
                 {
                     "answer": answer,
                     "retrieved_sources": [
-                        metadata.get("file_path") or metadata.get("source", "unknown")
-                        for metadata in metadatas
+                        source["metadata"].get("file_path")
+                        or source["metadata"].get("source", "unknown")
+                        for source in sources
                     ],
                     "scores": scores,
                 }
