@@ -1,0 +1,44 @@
+[
+  {
+    "id": "apollo11-overview",
+    "category": "overview",
+    "mission": "apollo_11",
+    "question": "What were Apollo 11's principal mission objectives, and which objectives were achieved?",
+    "reference_answer": "Apollo 11's primary objective was to perform a crewed lunar landing and return safely to Earth. The mission also included lunar surface operations, scientific sample collection, experiments, photography, and engineering evaluation; the landing and safe return were accomplished."
+  },
+  {
+    "id": "apollo13-emergency",
+    "category": "emergency",
+    "mission": "apollo_13",
+    "question": "What problems did Apollo 13 report after the crew said they had a problem, and how did those problems change the mission?",
+    "reference_answer": "The crew and controllers observed electrical and oxygen-system anomalies following an oxygen tank failure. The lunar landing was abandoned, the lunar module was used to support the crew, and the mission focused on preserving consumables and returning the crew safely to Earth."
+  },
+  {
+    "id": "challenger-disaster",
+    "category": "disaster_analysis",
+    "mission": "challenger",
+    "question": "What does the Challenger mission audio document around the point when controllers lost normal tracking and communications?",
+    "reference_answer": "The audio documents normal ascent calls followed by an apparent major vehicle anomaly, loss of usable tracking or communication, and controllers shifting from routine ascent operations to contingency response and data preservation."
+  },
+  {
+    "id": "apollo11-crew",
+    "category": "crew",
+    "mission": "apollo_11",
+    "question": "Who were the Apollo 11 crew members, and what role did each astronaut perform?",
+    "reference_answer": "Neil Armstrong served as commander, Michael Collins as command module pilot, and Edwin 'Buzz' Aldrin as lunar module pilot. Armstrong and Aldrin descended to the lunar surface while Collins remained in lunar orbit in the command module."
+  },
+  {
+    "id": "apollo11-technical",
+    "category": "technical",
+    "mission": "apollo_11",
+    "question": "What guidance, navigation, or landing concerns appear in the Apollo 11 records during the lunar module's powered descent?",
+    "reference_answer": "The records describe navigation and guidance monitoring, computer program alarms, landing-site assessment, fuel and altitude calls, and the crew's manual control inputs during the final approach and landing."
+  },
+  {
+    "id": "apollo13-timeline",
+    "category": "timeline",
+    "mission": "apollo_13",
+    "question": "Summarize the major sequence from Apollo 13's launch through the accident, lunar flyby, and recovery.",
+    "reference_answer": "Apollo 13 launched toward a lunar landing, suffered an oxygen tank failure during translunar flight, aborted the landing, used the lunar module as a lifeboat, followed a free-return path around the Moon with corrective burns, powered the command module back up, and returned the crew safely to Earth."
+  }
+]
