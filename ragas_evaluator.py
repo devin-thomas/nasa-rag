@@ -98,22 +98,24 @@ async def _evaluate_with_ragas(
         client=client,
         model="text-embedding-3-small",
     )
-    relevancy_metric = AnswerRelevancy(
-        llm=evaluator_llm,
-        embeddings=evaluator_embeddings,
-        strictness=3,
-    )
-    faithfulness_metric = Faithfulness(llm=evaluator_llm)
-    relevancy, faithfulness = await asyncio.gather(
-        relevancy_metric.ascore(user_input=question, response=answer),
-        faithfulness_metric.ascore(
-            user_input=question,
-            response=answer,
-            retrieved_contexts=contexts,
-        ),
-    )
-    await client.close()
-    return float(relevancy.value), float(faithfulness.value)
+    try:
+        relevancy_metric = AnswerRelevancy(
+            llm=evaluator_llm,
+            embeddings=evaluator_embeddings,
+            strictness=3,
+        )
+        faithfulness_metric = Faithfulness(llm=evaluator_llm)
+        relevancy, faithfulness = await asyncio.gather(
+            relevancy_metric.ascore(user_input=question, response=answer),
+            faithfulness_metric.ascore(
+                user_input=question,
+                response=answer,
+                retrieved_contexts=contexts,
+            ),
+        )
+        return float(relevancy.value), float(faithfulness.value)
+    finally:
+        await client.close()
 
 
 def evaluate_response_quality(

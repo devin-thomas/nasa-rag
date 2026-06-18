@@ -81,7 +81,8 @@ def run_batch(
     for index, item in enumerate(dataset, start=1):
         LOGGER.info("[%d/%d] %s", index, len(dataset), item["question"])
         record: dict[str, Any] = {
-            key: item[key] for key in ("id", "category", "mission", "question")
+            key: item[key]
+            for key in ("id", "category", "mission", "question", "reference_answer")
         }
         try:
             retrieved = rag_client.retrieve_documents(
