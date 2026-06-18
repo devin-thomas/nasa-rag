@@ -33,7 +33,7 @@ def display_evaluation_metrics(scores: dict[str, Any]) -> None:
         st.warning(str(scores["error"]))
         return
     columns = st.columns(len(scores))
-    for column, (metric_name, value) in zip(columns, scores.items()):
+    for column, (metric_name, value) in zip(columns, scores.items(), strict=True):
         if isinstance(value, (int, float)):
             column.metric(metric_name.replace("_", " ").title(), f"{value:.3f}")
 
@@ -46,12 +46,14 @@ def display_sources(message: dict[str, Any]) -> None:
     with st.expander(f"Retrieved evidence ({len(sources)} excerpts)"):
         for index, source in enumerate(sources, start=1):
             metadata = source.get("metadata", {})
+            source_name = metadata.get("file_path") or metadata.get("source", "Unknown")
             st.markdown(
-                f"**Source {index}:** `{metadata.get('file_path') or metadata.get('source', 'Unknown')}`  \n"
+                f"**Source {index}:** `{source_name}`  \n"
                 f"Mission: `{metadata.get('mission', 'unknown')}` · "
                 f"Category: `{metadata.get('document_category', 'unknown')}`"
             )
-            st.caption(source.get("document", "")[:700] + ("…" if len(source.get("document", "")) > 700 else ""))
+            document = source.get("document", "")
+            st.caption(document[:700] + ("…" if len(document) > 700 else ""))
 
 
 def main() -> None:
@@ -167,7 +169,7 @@ def main() -> None:
         st.markdown(response)
         sources = [
             {"document": document, "metadata": metadata}
-            for document, metadata in zip(documents, metadatas)
+            for document, metadata in zip(documents, metadatas, strict=False)
         ]
         assistant_turn: dict[str, Any] = {
             "role": "assistant",

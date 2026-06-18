@@ -13,6 +13,7 @@ __pycache__/
 htmlcov/
 chroma_db*/
 *.log
+evaluation_report*.json
 .streamlit/secrets.toml
 .DS_Store
 Thumbs.db

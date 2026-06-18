@@ -1,330 +1,301 @@
-# NASA RAG Chat Project - Student Learning Version
+# NASA Mission Intelligence
 
-A hands-on learning project for building a Retrieval-Augmented Generation (RAG) system with real-time evaluation capabilities. This project teaches students to create a complete RAG pipeline from document processing to interactive chat interface.
+NASA Mission Intelligence is an end-to-end retrieval-augmented generation (RAG)
+application for exploring primary-source records from Apollo 11, Apollo 13, and the
+STS-51-L Challenger mission. It turns mission reports, flight plans, technical records,
+and transcripts into a searchable ChromaDB index, retrieves mission-specific evidence,
+and asks an OpenAI model to answer with inline source citations.
 
-## 🎯 Learning Objectives
+The repository includes a Streamlit chat interface, real-time RAGAS scoring, and a batch
+evaluation workflow covering mission overview, emergencies, disaster analysis, crew,
+technical operations, and timeline reconstruction.
 
-By completing this project, students will learn to:
-- Build document embedding pipelines with ChromaDB and OpenAI
-- Implement RAG retrieval systems with semantic search
-- Create LLM client integrations with conversation management
-- Develop real-time evaluation systems using RAGAS metrics
-- Build interactive chat interfaces with Streamlit
-- Handle error scenarios and edge cases in production systems
+## Highlights
 
-## 📁 Project Structure
+- Configurable character chunking with sentence-aware boundaries and exact overlap
+- OpenAI `text-embedding-3-small` embeddings persisted in ChromaDB
+- Stable document IDs and `skip`, `update`, and `replace` indexing modes
+- Per-chunk mission, file, category, position, and processing metadata
+- Top-k semantic retrieval with optional mission filtering
+- Deduplicated, relevance-sorted context with explicit source labels
+- A grounded NASA historian prompt with bounded conversation history
+- RAGAS response relevancy and faithfulness scoring on every evaluated answer
+- Additional lexical context precision and optional reference-answer token F1
+- Six-question batch dataset with per-question and aggregate reports
+- Focused tests that run without an API key or network access
 
-```
-/
-├── chat.py                 # Main Streamlit chat application (TODO-based)
-├── embedding_pipeline.py   # ChromaDB embedding pipeline (TODO-based)
-├── llm_client.py           # OpenAI LLM client wrapper (TODO-based)
-├── rag_client.py           # RAG system client (TODO-based)
-├── ragas_evaluator.py      # RAGAS evaluation metrics (TODO-based)
-├── requirements.txt        # Python dependencies
-└── README.md              # This file
-```
+## Architecture
 
-## 🚀 Getting Started
-
-### Prerequisites
-- Python 3.8+
-- OpenAI API key
-- Basic understanding of Python, APIs, and vector databases
-- Familiarity with machine learning concepts
-
-### Installation
-
-1. **Navigate to the project folder**:
-   ```bash
-   cd project
-   ```
-
-2. **Install dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Set up your OpenAI API key**:
-   ```bash
-   export OPENAI_API_KEY="your-api-key-here"
-   ```
-
-## 📚 Learning Path
-
-This project follows a structured learning approach where each file contains TODO comments guiding you through the implementation. Complete the files in this recommended order:
-
-### **Phase 1: Core Infrastructure**
-
-#### 1. **LLM Client (`llm_client.py`)** - *Estimated Time: 2-3 hours*
-**What you'll learn:**
-- OpenAI Chat Completions API integration
-- System prompt engineering for domain expertise
-- Conversation history management
-- Context integration strategies
-- Model parameter tuning (temperature, max_tokens)
-
-**Key TODOs:**
-- Define system prompt for NASA expertise
-- Set context in messages
-- Add chat history management
-- Create OpenAI Client
-- Send request to OpenAI and return response
-
-#### 2. **RAG Client (`rag_client.py`)** - *Estimated Time: 3-4 hours*
-**What you'll learn:**
-- ChromaDB backend discovery and connection
-- Semantic search with metadata filtering
-- Document retrieval optimization
-- Context formatting for LLM consumption
-
-**Key TODOs:**
-- Discover available ChromaDB collections
-- Initialize RAG system with database connections
-- Implement document retrieval with optional filtering
-- Format retrieved documents into structured context
-
-#### 3. **Embedding Pipeline (`embedding_pipeline.py`)** - *Estimated Time: 6-8 hours*
-**What you'll learn:**
-- Document processing and text chunking strategies
-- OpenAI embeddings generation
-- ChromaDB collection management
-- Metadata extraction and organization
-- Batch processing and error handling
-- Command-line interface development
-
-**Key TODOs:**
-- Initialize OpenAI client and ChromaDB
-- Implement intelligent text chunking with overlap
-- Create document management methods
-- Build metadata extraction from file paths
-- Implement batch document processing
-- Create command-line interface
-
-### **Phase 2: Evaluation and Interface**
-
-#### 4. **RAGAS Evaluator (`ragas_evaluator.py`)** - *Estimated Time: 2-3 hours*
-**What you'll learn:**
-- Response quality evaluation metrics
-- RAGAS framework integration
-- Multi-dimensional assessment (relevancy, faithfulness, precision)
-- Evaluation data structure management
-
-**Key TODOs:**
-- Create evaluator LLM and embeddings
-- Define evaluation metrics instances
-- Evaluate responses using multiple metrics
-- Return comprehensive evaluation results
-
-#### 5. **Chat Application (`chat.py`)** - *Estimated Time: 4-5 hours*
-**What you'll learn:**
-- Streamlit web application development
-- Real-time evaluation integration
-- User interface design for RAG systems
-- Session state management
-- Configuration and settings management
-
-**Key TODOs:**
-- Integrate all components (RAG, LLM, evaluation)
-- Build interactive chat interface
-- Implement real-time quality metrics display
-- Handle user configuration and backend selection
-
-## 🛠️ Implementation Guidelines
-
-### **TODO-Based Learning Approach**
-Each file contains strategically placed TODO comments that guide you through:
-1. **Understanding the purpose** of each function/method
-2. **Implementing core logic** step by step
-3. **Handling edge cases** and error scenarios
-4. **Integrating components** effectively
-
-### **Code Quality Standards**
-- Follow Python PEP 8 style guidelines
-- Add comprehensive error handling
-- Include informative logging statements
-- Write clear docstrings for all functions
-- Use type hints for better code clarity
-
-### **Testing Strategy**
-- Test each component individually before integration
-- Use small datasets for initial testing
-- Verify API connections before processing large batches
-- Test edge cases (empty files, network errors, invalid inputs)
-
-## 📊 Data Requirements
-
-### **Expected Data Structure**
-The system expects NASA document data organized in folders:
-```
-data/
-├── apollo11/           # Apollo 11 mission documents
-│   ├── *.txt          # Text files with mission data
-├── apollo13/           # Apollo 13 mission documents
-│   ├── *.txt          # Text files with mission data
-└── challenger/         # Challenger mission documents
-    ├── *.txt          # Text files with mission data
+```mermaid
+flowchart LR
+    A["NASA text archives"] --> B["Chunk + metadata pipeline"]
+    B --> C["OpenAI embeddings"]
+    C --> D["Persistent ChromaDB"]
+    Q["User question"] --> E["Question embedding"]
+    E --> D
+    D --> F["Mission-filtered top-k excerpts"]
+    F --> G["Attributed context builder"]
+    G --> H["Grounded OpenAI answer"]
+    H --> I["Streamlit chat + citations"]
+    F --> J["RAGAS evaluator"]
+    H --> J
+    J --> I
 ```
 
-### **Supported Document Types**
-- Plain text files (.txt)
-- Mission transcripts
-- Technical documents
-- Audio transcriptions
-- Flight plans and procedures
+The embedding function is attached to the Chroma collection during both indexing and
+retrieval. This guarantees that document and question vectors use the model recorded in
+the collection metadata.
 
-## 🧪 Testing Your Implementation
+## Repository Layout
 
-### **Component Testing**
+```text
+.
+├── batch_evaluate.py          # End-to-end batch evaluation CLI
+├── chat.py                    # Streamlit interface
+├── data_text/                 # Included NASA mission records
+│   ├── apollo11/
+│   ├── apollo13/
+│   └── challenger/
+├── embedding_pipeline.py      # Chunking, embedding, persistence, and stats
+├── evaluation_dataset.txt     # JSON-formatted, rubric-spanning test questions
+├── llm_client.py              # Grounded answer generation
+├── rag_client.py              # Backend discovery, retrieval, and context formatting
+├── ragas_evaluator.py         # Real-time quality metrics
+├── requirements.txt           # Runtime dependencies
+├── requirements-dev.txt       # Runtime plus test/lint tooling
+└── tests/                     # Focused offline tests
+```
 
-1. **Test LLM Client**:
-   ```python
-   from llm_client import generate_response
-   response = generate_response(api_key, "What was Apollo 11?", "", [])
-   print(response)
-   ```
+Generated Chroma databases, logs, virtual environments, local secrets, and evaluation
+reports are intentionally excluded from version control.
 
-2. **Test RAG Client**:
-   ```python
-   from rag_client import discover_chroma_backends
-   backends = discover_chroma_backends()
-   print(backends)
-   ```
+## Requirements
 
-3. **Test Embedding Pipeline**:
-   ```bash
-   python embedding_pipeline.py --openai-key YOUR_KEY --stats-only
-   ```
+- Python 3.10 or newer
+- An OpenAI API key with access to an embedding model and a chat-completions model
+- Internet access while building the index, generating answers, or running RAGAS
 
-4. **Test Evaluation**:
-   ```python
-   from ragas_evaluator import evaluate_response_quality
-   scores = evaluate_response_quality("question", "answer", ["context"])
-   print(scores)
-   ```
+The pinned `langchain-community==0.4.1` dependency is deliberate. RAGAS 0.4.3 imports a
+compatibility module removed in `langchain-community` 0.4.2.
 
-### **Integration Testing**
+## Quick Start
 
-1. **Run the complete pipeline**:
-   ```bash
-   # Process documents
-   python embedding_pipeline.py --openai-key YOUR_KEY --data-path ./data
-   
-   # Launch chat interface
-   streamlit run chat.py
-   ```
+### 1. Create an environment
 
-## 🎓 Learning Checkpoints
+```bash
+python -m venv .venv
+```
 
-### **Checkpoint 1: Basic Functionality**
-- [ ] LLM client generates responses
-- [ ] RAG client discovers ChromaDB backends
-- [ ] Embedding pipeline processes sample files
-- [ ] Evaluation system calculates basic metrics
+Activate it on macOS or Linux:
 
-### **Checkpoint 2: Integration**
-- [ ] Components work together seamlessly
-- [ ] Chat interface loads and responds to queries
-- [ ] Real-time evaluation displays metrics
-- [ ] Error handling works correctly
+```bash
+source .venv/bin/activate
+```
 
-### **Checkpoint 3: Advanced Features**
-- [ ] Mission-specific filtering works
-- [ ] Conversation history is maintained
-- [ ] Batch processing handles large datasets
-- [ ] Performance is acceptable for interactive use
+Activate it in PowerShell:
 
-## 🚨 Common Challenges and Solutions
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
 
-### **API Integration Issues**
-- **Problem**: OpenAI API key errors
-- **Solution**: Verify key is set correctly and has sufficient credits
+Install the application:
 
-### **ChromaDB Connection Issues**
-- **Problem**: Collection not found errors
-- **Solution**: Run embedding pipeline first to create collections
+```bash
+python -m pip install -r requirements.txt
+```
 
-### **Memory and Performance Issues**
-- **Problem**: Out of memory during processing
-- **Solution**: Reduce batch sizes and chunk sizes
+### 2. Set the API key
 
-### **Evaluation Errors**
-- **Problem**: RAGAS evaluation fails
-- **Solution**: Ensure all dependencies are installed and contexts are properly formatted
+macOS or Linux:
 
-## 📈 Success Metrics
+```bash
+export OPENAI_API_KEY="your-key"
+```
 
-Your implementation is successful when:
-1. **Functionality**: All components work individually and together
-2. **User Experience**: Chat interface is responsive and intuitive
-3. **Quality**: Responses are relevant and well-sourced
-4. **Evaluation**: Metrics provide meaningful quality assessment
-5. **Robustness**: System handles errors gracefully
-6. **Performance**: Response times are acceptable for interactive use
+PowerShell:
 
-## 🔧 Configuration Options
+```powershell
+$env:OPENAI_API_KEY = "your-key"
+```
 
-### **Embedding Pipeline**
-- Chunk size and overlap settings
-- Batch processing parameters
-- Update modes for existing documents
-- Embedding model selection
+The Streamlit interface also accepts the key in a password field. Never commit a key;
+`.env`, Streamlit secrets, and common local credential files are ignored.
 
-### **LLM Client**
-- Model selection (GPT-3.5-turbo, GPT-4)
-- Temperature and creativity settings
-- Maximum token limits
-- Conversation history length
+### 3. Build the vector index
 
-### **RAG System**
-- Number of documents to retrieve
-- Mission-specific filtering options
-- Similarity thresholds
+```bash
+python embedding_pipeline.py \
+  --data-path ./data_text \
+  --chroma-dir ./chroma_db_openai \
+  --collection-name nasa_space_missions_text \
+  --chunk-size 1000 \
+  --chunk-overlap 200 \
+  --update-mode skip
+```
 
-### **Evaluation System**
-- Metric selection and weighting
-- Evaluation frequency settings
-- Display preferences
+The command scans all three mission folders, embeds each chunk, and prints file, chunk,
+mission, and collection totals. A first run makes paid OpenAI embedding requests.
 
-## 🏆 Extension Opportunities
+### 4. Launch the application
 
-Once you complete the basic implementation, consider these enhancements:
+```bash
+streamlit run chat.py
+```
 
-1. **Advanced Retrieval**: Implement hybrid search (semantic + keyword)
-2. **Multi-modal Support**: Add support for images and audio
-3. **Performance Optimization**: Add caching and parallel processing
-4. **Advanced Evaluation**: Implement custom metrics for domain-specific quality
-5. **Deployment**: Containerize and deploy to cloud platforms
-6. **Monitoring**: Add comprehensive logging and monitoring
-7. **Security**: Implement authentication and rate limiting
+Open the local URL printed by Streamlit. Choose a mission scope, retrieval depth, and
+answer model, then ask a question. Enabling RAGAS adds evaluator requests and latency.
 
-## 📚 Learning Resources
+## Indexing and Inspection
 
-- [ChromaDB Documentation](https://docs.trychroma.com/)
-- [OpenAI API Documentation](https://platform.openai.com/docs)
-- [RAGAS Documentation](https://docs.ragas.io/)
-- [Streamlit Documentation](https://docs.streamlit.io/)
-- [RAG System Design Patterns](https://python.langchain.com/docs/use_cases/question_answering/)
+The important pipeline flags are:
 
-## 🤝 Getting Help
+| Flag | Purpose | Default |
+| --- | --- | --- |
+| `--data-path` | Directory containing mission folders | `./data_text` |
+| `--chroma-dir` | Persistent ChromaDB directory | `./chroma_db_openai` |
+| `--collection-name` | Collection to create or reuse | `nasa_space_missions_text` |
+| `--embedding-model` | OpenAI embedding model | `text-embedding-3-small` |
+| `--chunk-size` | Maximum characters per chunk | `1000` |
+| `--chunk-overlap` | Shared characters between consecutive chunks | `200` |
+| `--batch-size` | Embeddings written per batch | `50` |
+| `--update-mode` | Existing-content policy | `skip` |
+| `--stats-only` | Print collection aggregates without embedding | off |
+| `--test-query` | Run a semantic query after indexing | unset |
 
-If you encounter issues:
-1. Check the TODO comments for guidance
-2. Review error messages carefully
-3. Test components individually
-4. Verify API keys and dependencies
-5. Check data format and structure
-6. Review the completed implementation in `project_completed/` folder
+Update modes have intentionally different semantics:
 
-## 📝 Submission Guidelines
+- `skip` embeds only missing stable IDs and leaves existing chunks untouched.
+- `update` upserts current chunks and deletes stale chunks when a file becomes shorter.
+- `replace` prepares all new embeddings before deleting that file's existing chunks,
+  reducing the risk of data loss when an embedding request fails.
 
-When submitting your completed project:
-1. Ensure all TODO items are implemented
-2. Test the complete workflow end-to-end
-3. Include a brief report on challenges faced and solutions found
-4. Document any additional features or improvements you added
-5. Provide sample queries and expected responses
+Inspect an existing collection without an API call:
 
----
+```bash
+python embedding_pipeline.py \
+  --chroma-dir ./chroma_db_openai \
+  --collection-name nasa_space_missions_text \
+  --stats-only
+```
 
-**Good luck with your RAG system implementation!** This project will give you hands-on experience with modern AI application development, from data processing to user interface design. Take your time with each component and don't hesitate to experiment with different approaches and parameters.
+Run a retrieval smoke query after indexing:
+
+```bash
+python embedding_pipeline.py \
+  --data-path ./data_text \
+  --chroma-dir ./chroma_db_openai \
+  --update-mode skip \
+  --test-query "What problems did Apollo 13 encounter?"
+```
+
+## Evaluation
+
+`evaluation_dataset.txt` is JSON-formatted text containing six questions and concise
+reference answers. It spans all three missions and the required categories:
+
+- overview
+- emergency
+- disaster analysis
+- crew
+- technical
+- timeline
+
+Run the complete evaluation after building the Chroma collection:
+
+```bash
+python batch_evaluate.py \
+  --chroma-dir ./chroma_db_openai \
+  --collection-name nasa_space_missions_text \
+  --output ./evaluation_report.json
+```
+
+The report contains the answer, retrieved sources, scores, errors, and mean score for
+each metric. `evaluation_report.json` is a generated artifact and should not be committed.
+Use `--limit 1` for a lower-cost smoke run.
+
+### Metrics
+
+- **Response relevancy:** RAGAS generates candidate questions from the response and
+  compares them semantically with the original question.
+- **Faithfulness:** RAGAS decomposes the response into claims and checks those claims
+  against the retrieved excerpts.
+- **Lexical context precision:** the fraction of meaningful answer tokens present in
+  retrieved context; this is transparent and deterministic, not a substitute for RAGAS.
+- **Reference token F1:** optional overlap with the dataset reference answer during batch
+  evaluation.
+
+## Testing and Quality Checks
+
+Install development dependencies:
+
+```bash
+python -m pip install -r requirements-dev.txt
+```
+
+Run the same checks as continuous integration:
+
+```bash
+ruff check .
+pytest
+```
+
+The tests cover chunk bounds and overlap, stable IDs, mission metadata, mission-filtered
+retrieval, top-k limits, context sorting and deduplication, prompt construction, evaluator
+input errors, lexical metrics, and dataset integrity. OpenAI and Chroma calls are isolated
+with lightweight fakes where appropriate.
+
+## Design Decisions
+
+### Character-bounded chunks
+
+The rubric constrains maximum chunk size in characters or tokens. Character bounds make
+that invariant directly testable and independent of tokenizer versions. The pipeline seeks
+a nearby paragraph or sentence boundary but always advances from the prior chunk end minus
+the configured overlap, so consecutive chunks share exactly the requested number of
+characters.
+
+### Stable source identity
+
+Chunk IDs combine mission, source, a short normalized-path digest, and chunk index. This
+keeps IDs readable while avoiding collisions between similarly named files. The ID scheme
+enables idempotent indexing and predictable update behavior.
+
+### Grounding boundary
+
+Retrieved content is labeled as quoted evidence and fenced from the current question. The
+system prompt requires citations, prohibits unsupported memory-based additions, and tells
+the model to treat instructions embedded in source documents as data. Conversation history
+is limited to the last eight valid user or assistant turns; retrieval context is fresh for
+every request.
+
+### Evaluation is optional in chat
+
+RAGAS is valuable but uses additional LLM and embedding calls. The chat application leaves
+it off by default and makes the cost/latency tradeoff visible. Batch evaluation enables it
+for every dataset record.
+
+## Limitations
+
+- Results depend on OCR and transcript quality in the supplied archives.
+- The included Challenger corpus is mission audio, not the complete accident investigation;
+  answers about root cause should therefore acknowledge missing evidence.
+- Local ChromaDB persistence is intended for a single-user portfolio application, not a
+  distributed production service.
+- OpenAI service availability, model access, and account budget are external dependencies.
+- A complete live batch evaluation incurs API cost and cannot be reproduced offline; the
+  deterministic test suite validates orchestration without claiming model-quality scores.
+
+## Data and Attribution
+
+The project is based on Udacity's NASA Mission Intelligence educational starter and uses
+the NASA text records bundled with that material. The upstream educational-content license
+is reproduced in [LICENSE.md](LICENSE.md). NASA-origin materials are retained as source
+evidence; this repository does not claim authorship of those records.
+
+## Possible Extensions
+
+- Hybrid lexical/vector retrieval with a reranking stage
+- Streaming responses and token/cost telemetry
+- Automated regression thresholds for saved evaluation reports
+- Containerized deployment with a managed vector store
+- Page- or timestamp-level deep links into source documents

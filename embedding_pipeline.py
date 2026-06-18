@@ -9,9 +9,10 @@ import logging
 import os
 import re
 import time
+from collections.abc import Iterable
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Iterable, Literal
+from typing import Any, Literal
 
 import chromadb
 from chromadb.config import Settings
@@ -268,7 +269,10 @@ class ChromaEmbeddingPipelineTextOnly:
             ("cm", "command_module"),
             ("full_text", "complete_document"),
         )
-        return next((category for marker, category in categories if marker in name), "general_document")
+        return next(
+            (category for marker, category in categories if marker in name),
+            "general_document",
+        )
 
     def scan_text_files_only(self, base_path: str) -> list[Path]:
         """Return supported mission text files in deterministic order."""
@@ -320,10 +324,14 @@ class ChromaEmbeddingPipelineTextOnly:
         stats = {"added": 0, "updated": 0, "skipped": 0}
 
         if update_mode == "skip":
-            pending = [item for item in zip(ids, documents) if item[0] not in current_ids]
+            pending = [
+                item
+                for item in zip(ids, documents, strict=True)
+                if item[0] not in current_ids
+            ]
             stats["skipped"] = len(documents) - len(pending)
         else:
-            pending = list(zip(ids, documents))
+            pending = list(zip(ids, documents, strict=True))
 
         prepared: list[tuple[list[str], list[str], list[dict[str, Any]], list[list[float]]]] = []
         for offset in range(0, len(pending), batch_size):
@@ -434,7 +442,9 @@ class ChromaEmbeddingPipelineTextOnly:
         metadatas = result.get("metadatas") or []
         stats: dict[str, Any] = {
             "total_chunks": self.collection.count(),
-            "unique_sources": len({item.get("file_path", item.get("source")) for item in metadatas}),
+            "unique_sources": len(
+                {item.get("file_path", item.get("source")) for item in metadatas}
+            ),
             "missions": {},
             "data_types": {},
             "document_categories": {},

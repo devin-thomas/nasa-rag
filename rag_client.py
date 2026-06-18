@@ -45,7 +45,10 @@ def discover_chroma_backends(search_root: str | Path = ".") -> dict[str, dict[st
                 backends[key] = {
                     "directory": str(directory),
                     "collection_name": summary.name,
-                    "display_name": f"{summary.name} — {directory.name} ({collection.count():,} chunks)",
+                    "display_name": (
+                        f"{summary.name} — {directory.name} "
+                        f"({collection.count():,} chunks)"
+                    ),
                     "document_count": collection.count(),
                 }
         except Exception as exc:
@@ -168,7 +171,10 @@ def format_context(
         source = metadata.get("file_path") or metadata.get("source") or "Unknown source"
         category = _display_label(metadata.get("document_category"))
         relevance = max(0.0, min(1.0, 1.0 - distance)) if distances else None
-        header = f"[Source {source_number} | Mission: {mission} | File: {source} | Category: {category}"
+        header = (
+            f"[Source {source_number} | Mission: {mission} | "
+            f"File: {source} | Category: {category}"
+        )
         if relevance is not None:
             header += f" | Relevance: {relevance:.3f}"
         context_parts.append(f"{header}]")
