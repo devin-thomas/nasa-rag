@@ -1,175 +1,113 @@
 # NASA Mission Intelligence
 
-NASA Mission Intelligence is an end-to-end retrieval-augmented generation (RAG)
-application for exploring primary-source records from Apollo 11, Apollo 13, and the
-STS-51-L Challenger mission. It turns mission reports, flight plans, technical records,
-and transcripts into a searchable ChromaDB index, retrieves mission-specific evidence,
-and asks an OpenAI model to answer with inline source citations.
+NASA Mission Intelligence is a retrieval-augmented generation application for exploring
+records from Apollo 11, Apollo 13, and STS-51-L Challenger. It turns mission transcripts,
+flight plans, and technical reports into a searchable local archive, then uses the most
+relevant passages to answer questions with inline source citations.
 
-The repository includes a Streamlit chat interface, real-time RAGAS scoring, and a batch
-evaluation workflow covering mission overview, emergencies, disaster analysis, crew,
-technical operations, and timeline reconstruction.
+The project combines an OpenAI embedding and chat workflow with ChromaDB, a Streamlit
+interface, and RAGAS evaluation. The emphasis is on traceable answers: retrieval can be
+limited to one mission, every response is grounded in the selected excerpts, and the
+supporting text remains visible alongside the answer.
 
-## Highlights
-
-- Configurable character chunking with sentence-aware boundaries and exact overlap
-- OpenAI `text-embedding-3-small` embeddings persisted in ChromaDB
-- Stable document IDs and `skip`, `update`, and `replace` indexing modes
-- Per-chunk mission, file, category, position, and processing metadata
-- Top-k semantic retrieval with optional mission filtering
-- Deduplicated, relevance-sorted context with explicit source labels
-- A grounded NASA historian prompt with bounded conversation history
-- RAGAS response relevancy and faithfulness scoring on every evaluated answer
-- Additional lexical context precision and optional reference-answer token F1
-- Six-question batch dataset with per-question and aggregate reports
-- Focused tests that run without an API key or network access
-
-## Architecture
+## How it works
 
 ```mermaid
 flowchart LR
-    A["NASA text archives"] --> B["Chunk + metadata pipeline"]
+    A["NASA text records"] --> B["Chunk and tag"]
     B --> C["OpenAI embeddings"]
-    C --> D["Persistent ChromaDB"]
-    Q["User question"] --> E["Question embedding"]
-    E --> D
-    D --> F["Mission-filtered top-k excerpts"]
-    F --> G["Attributed context builder"]
-    G --> H["Grounded OpenAI answer"]
-    H --> I["Streamlit chat + citations"]
-    F --> J["RAGAS evaluator"]
-    H --> J
-    J --> I
+    C --> D["Local ChromaDB index"]
+    Q["Question"] --> E["Semantic retrieval"]
+    D --> E
+    E --> F["Attributed context"]
+    F --> G["Grounded answer"]
+    E --> H["RAGAS evaluation"]
+    G --> H
 ```
 
-The embedding function is attached to the Chroma collection during both indexing and
-retrieval. This guarantees that document and question vectors use the model recorded in
-the collection metadata.
+The indexing pipeline creates character-bounded, overlapping chunks and records their
+mission, source path, document category, and position. At question time, the application
+embeds the query, retrieves the closest chunks, removes duplicate passages, and orders the
+remaining evidence by distance. A bounded conversation history gives follow-up questions
+continuity without reusing stale retrieval context.
 
-## Repository Layout
+The interface supports:
 
-```text
-.
-├── batch_evaluate.py          # End-to-end batch evaluation CLI
-├── chat.py                    # Streamlit interface
-├── data_text/                 # Included NASA mission records
-│   ├── apollo11/
-│   ├── apollo13/
-│   └── challenger/
-├── embedding_pipeline.py      # Chunking, embedding, persistence, and stats
-├── evaluation_dataset.txt     # JSON-formatted, rubric-spanning test questions
-├── llm_client.py              # Grounded answer generation
-├── rag_client.py              # Backend discovery, retrieval, and context formatting
-├── ragas_evaluator.py         # Real-time quality metrics
-├── requirements.txt           # Runtime dependencies
-├── requirements-dev.txt       # Runtime plus test/lint tooling
-└── tests/                     # Focused offline tests
-```
+- mission-specific or cross-mission search;
+- configurable retrieval depth and answer model;
+- cited answers with expandable source excerpts; and
+- optional response-relevancy and faithfulness scores after each answer.
 
-Generated Chroma databases, logs, virtual environments, local secrets, and evaluation
-reports are intentionally excluded from version control.
+## Quick start
 
-## Requirements
-
-- Python 3.10 or newer
-- An OpenAI API key with access to an embedding model and a chat-completions model
-- Internet access while building the index, generating answers, or running RAGAS
-
-The pinned `langchain-community==0.4.1` dependency is deliberate. RAGAS 0.4.3 imports a
-compatibility module removed in `langchain-community` 0.4.2.
-
-## Quick Start
-
-### 1. Create an environment
+Python 3.10 or newer and an OpenAI API key are required for indexing and answering
+questions.
 
 ```bash
+git clone https://github.com/devin-thomas/nasa-rag.git
+cd nasa-rag
 python -m venv .venv
 ```
 
-Activate it on macOS or Linux:
+Activate the environment on macOS or Linux:
 
 ```bash
 source .venv/bin/activate
 ```
 
-Activate it in PowerShell:
+Or in PowerShell:
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
 ```
 
-Install the application:
+Install the runtime dependencies:
 
 ```bash
 python -m pip install -r requirements.txt
 ```
 
-### 2. Set the API key
-
-macOS or Linux:
+Set the API key in the current shell:
 
 ```bash
 export OPENAI_API_KEY="your-key"
 ```
 
-PowerShell:
-
 ```powershell
 $env:OPENAI_API_KEY = "your-key"
 ```
 
-The Streamlit interface also accepts the key in a password field. Never commit a key;
-`.env`, Streamlit secrets, and common local credential files are ignored.
-
-### 3. Build the vector index
+Build the local index:
 
 ```bash
 python embedding_pipeline.py \
   --data-path ./data_text \
   --chroma-dir ./chroma_db_openai \
-  --collection-name nasa_space_missions_text \
-  --chunk-size 1000 \
-  --chunk-overlap 200 \
-  --update-mode skip
+  --collection-name nasa_space_missions_text
 ```
 
-The command scans all three mission folders, embeds each chunk, and prints file, chunk,
-mission, and collection totals. A first run makes paid OpenAI embedding requests.
-
-### 4. Launch the application
+Then launch the chat application:
 
 ```bash
 streamlit run chat.py
 ```
 
-Open the local URL printed by Streamlit. Choose a mission scope, retrieval depth, and
-answer model, then ask a question. Enabling RAGAS adds evaluator requests and latency.
+The first index build sends the included source chunks to the OpenAI embeddings API.
+Generated databases, reports, local environments, and secrets are excluded from version
+control.
 
-## Indexing and Inspection
+## Index maintenance
 
-The important pipeline flags are:
+The pipeline can be rerun safely as the source collection changes. Its three update modes
+serve different needs:
 
-| Flag | Purpose | Default |
-| --- | --- | --- |
-| `--data-path` | Directory containing mission folders | `./data_text` |
-| `--chroma-dir` | Persistent ChromaDB directory | `./chroma_db_openai` |
-| `--collection-name` | Collection to create or reuse | `nasa_space_missions_text` |
-| `--embedding-model` | OpenAI embedding model | `text-embedding-3-small` |
-| `--chunk-size` | Maximum characters per chunk | `1000` |
-| `--chunk-overlap` | Shared characters between consecutive chunks | `200` |
-| `--batch-size` | Embeddings written per batch | `50` |
-| `--update-mode` | Existing-content policy | `skip` |
-| `--stats-only` | Print collection aggregates without embedding | off |
-| `--test-query` | Run a semantic query after indexing | unset |
+- `skip` adds only chunks whose stable IDs are not already present;
+- `update` upserts current chunks and removes stale chunks for each processed file; and
+- `replace` embeds a file's new chunks before replacing its previous entries.
 
-Update modes have intentionally different semantics:
-
-- `skip` embeds only missing stable IDs and leaves existing chunks untouched.
-- `update` upserts current chunks and deletes stale chunks when a file becomes shorter.
-- `replace` prepares all new embeddings before deleting that file's existing chunks,
-  reducing the risk of data loss when an embedding request fails.
-
-Inspect an existing collection without an API call:
+Chunk size, overlap, batch size, embedding model, Chroma directory, and collection name are
+all configurable CLI options. To inspect an existing collection without making an API
+request:
 
 ```bash
 python embedding_pipeline.py \
@@ -178,29 +116,14 @@ python embedding_pipeline.py \
   --stats-only
 ```
 
-Run a retrieval smoke query after indexing:
-
-```bash
-python embedding_pipeline.py \
-  --data-path ./data_text \
-  --chroma-dir ./chroma_db_openai \
-  --update-mode skip \
-  --test-query "What problems did Apollo 13 encounter?"
-```
+This prints the collection size plus source, mission, data-type, and document-category
+aggregates.
 
 ## Evaluation
 
-`evaluation_dataset.txt` is JSON-formatted text containing six questions and concise
-reference answers. It spans all three missions and the required categories:
-
-- overview
-- emergency
-- disaster analysis
-- crew
-- technical
-- timeline
-
-Run the complete evaluation after building the Chroma collection:
+[`evaluation_dataset.txt`](evaluation_dataset.txt) contains six questions spanning mission
+overview, emergency response, disaster analysis, crew roles, technical operations, and
+timeline reconstruction. Run the full retrieval, generation, and evaluation path with:
 
 ```bash
 python batch_evaluate.py \
@@ -209,93 +132,64 @@ python batch_evaluate.py \
   --output ./evaluation_report.json
 ```
 
-The report contains the answer, retrieved sources, scores, errors, and mean score for
-each metric. `evaluation_report.json` is a generated artifact and should not be committed.
-Use `--limit 1` for a lower-cost smoke run.
+Each record includes the generated answer, retrieved sources, and scores. The summary
+reports mean values for:
 
-### Metrics
+- RAGAS response relevancy;
+- RAGAS faithfulness;
+- lexical context precision; and
+- reference-answer token F1.
 
-- **Response relevancy:** RAGAS generates candidate questions from the response and
-  compares them semantically with the original question.
-- **Faithfulness:** RAGAS decomposes the response into claims and checks those claims
-  against the retrieved excerpts.
-- **Lexical context precision:** the fraction of meaningful answer tokens present in
-  retrieved context; this is transparent and deterministic, not a substitute for RAGAS.
-- **Reference token F1:** optional overlap with the dataset reference answer during batch
-  evaluation.
+RAGAS makes additional model and embedding requests. `--limit 1` is useful for a lower-cost
+smoke run before evaluating the complete dataset.
 
-## Testing and Quality Checks
+## Project structure
 
-Install development dependencies:
+```text
+.
+├── batch_evaluate.py          # Batch retrieval, generation, and scoring
+├── chat.py                    # Streamlit user interface
+├── data_text/                 # Apollo 11, Apollo 13, and Challenger records
+├── embedding_pipeline.py      # Chunking, metadata, embeddings, and persistence
+├── evaluation_dataset.txt     # Questions and reference answers
+├── llm_client.py              # Grounded response generation
+├── rag_client.py              # Collection discovery and semantic retrieval
+├── ragas_evaluator.py         # RAGAS and deterministic evaluation metrics
+└── tests/                     # Focused offline tests
+```
+
+## Development
+
+Install the development dependencies and run the same checks used in CI:
 
 ```bash
 python -m pip install -r requirements-dev.txt
-```
-
-Run the same checks as continuous integration:
-
-```bash
 ruff check .
 pytest
 ```
 
-The tests cover chunk bounds and overlap, stable IDs, mission metadata, mission-filtered
-retrieval, top-k limits, context sorting and deduplication, prompt construction, evaluator
-input errors, lexical metrics, and dataset integrity. OpenAI and Chroma calls are isolated
-with lightweight fakes where appropriate.
+The tests use small fakes for external services, so they validate chunking, index update
+behavior, retrieval filters, context formatting, prompt construction, and evaluation data
+without an API key.
 
-## Design Decisions
+## Design notes and limits
 
-### Character-bounded chunks
+Character-based chunk limits keep chunk size predictable without coupling the pipeline to
+a particular tokenizer. Stable IDs make repeated indexing idempotent, while preparing
+embeddings before destructive replacement reduces the chance of losing an existing file
+when an API request fails.
 
-The rubric constrains maximum chunk size in characters or tokens. Character bounds make
-that invariant directly testable and independent of tokenizer versions. The pipeline seeks
-a nearby paragraph or sentence boundary but always advances from the prior chunk end minus
-the configured overlap, so consecutive chunks share exactly the requested number of
-characters.
+Answers are only as complete as the bundled evidence. OCR errors and transcript noise can
+affect retrieval, and the Challenger material consists of mission audio rather than the
+full accident investigation. The application therefore asks the model to state when the
+retrieved context is insufficient instead of filling gaps from general knowledge.
 
-### Stable source identity
+ChromaDB persistence is designed for local, single-user use. Live answer quality also
+depends on OpenAI model access, service availability, and account budget.
 
-Chunk IDs combine mission, source, a short normalized-path digest, and chunk index. This
-keeps IDs readable while avoiding collisions between similarly named files. The ID scheme
-enables idempotent indexing and predictable update behavior.
+## Data and license
 
-### Grounding boundary
-
-Retrieved content is labeled as quoted evidence and fenced from the current question. The
-system prompt requires citations, prohibits unsupported memory-based additions, and tells
-the model to treat instructions embedded in source documents as data. Conversation history
-is limited to the last eight valid user or assistant turns; retrieval context is fresh for
-every request.
-
-### Evaluation is optional in chat
-
-RAGAS is valuable but uses additional LLM and embedding calls. The chat application leaves
-it off by default and makes the cost/latency tradeoff visible. Batch evaluation enables it
-for every dataset record.
-
-## Limitations
-
-- Results depend on OCR and transcript quality in the supplied archives.
-- The included Challenger corpus is mission audio, not the complete accident investigation;
-  answers about root cause should therefore acknowledge missing evidence.
-- Local ChromaDB persistence is intended for a single-user portfolio application, not a
-  distributed production service.
-- OpenAI service availability, model access, and account budget are external dependencies.
-- A complete live batch evaluation incurs API cost and cannot be reproduced offline; the
-  deterministic test suite validates orchestration without claiming model-quality scores.
-
-## Data and Attribution
-
-The project is based on Udacity's NASA Mission Intelligence educational starter and uses
-the NASA text records bundled with that material. The upstream educational-content license
-is reproduced in [LICENSE.md](LICENSE.md). NASA-origin materials are retained as source
-evidence; this repository does not claim authorship of those records.
-
-## Possible Extensions
-
-- Hybrid lexical/vector retrieval with a reranking stage
-- Streaming responses and token/cost telemetry
-- Automated regression thresholds for saved evaluation reports
-- Containerized deployment with a managed vector store
-- Page- or timestamp-level deep links into source documents
+This project was developed from Udacity's NASA Mission Intelligence starter material. The
+included NASA records remain source evidence and are not presented as original project
+content. See [`LICENSE.md`](LICENSE.md) for the educational-content license and usage
+conditions.
