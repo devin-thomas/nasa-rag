@@ -13,15 +13,25 @@ supporting text remains visible alongside the answer.
 ## How it works
 
 ```mermaid
-flowchart LR
-    A["NASA text records"] --> B["Chunk and tag"]
-    B --> C["OpenAI embeddings"]
-    C --> D["Local ChromaDB index"]
-    Q["Question"] --> E["Semantic retrieval"]
+flowchart TB
+    A["NASA text records"]
+    B["Chunk and tag"]
+    C["OpenAI embeddings"]
+    D["Local ChromaDB index"]
+    Q["Question"]
+    E["Semantic retrieval"]
+    F["Attributed context"]
+    G["Grounded answer"]
+    H["RAGAS evaluation"]
+
+    A --> B
+    B --> C
+    C --> D
+    Q --> E
     D --> E
-    E --> F["Attributed context"]
-    F --> G["Grounded answer"]
-    E --> H["RAGAS evaluation"]
+    E --> F
+    F --> G
+    E --> H
     G --> H
 ```
 
@@ -96,6 +106,54 @@ The first index build sends the included source chunks to the OpenAI embeddings 
 Generated databases, reports, local environments, and secrets are excluded from version
 control.
 
+## Make shortcuts
+
+The repository includes a `Makefile` for the common local workflow:
+
+```bash
+make install   # install runtime dependencies
+make index     # build or update the local ChromaDB index
+make stats     # inspect the indexed collection without API calls
+make run       # launch the Streamlit app
+make evaluate  # run batch retrieval, generation, and scoring
+make test      # run the offline test suite
+```
+
+These commands use the default Chroma directory and collection name from the README examples.
+
+## Docker
+
+Docker is optional, but useful for users who want a repeatable Streamlit runtime without
+managing local Python packages. The OpenAI API key still needs to be supplied through the
+environment, and the ChromaDB folder should be mounted so the local index survives container
+restarts.
+
+Create a local `.env` file with:
+
+```env
+OPENAI_API_KEY=your-key
+```
+
+Build the image:
+
+```bash
+make docker-build
+```
+
+Build the local index on the host first:
+
+```bash
+make index
+```
+
+Run the app in Docker:
+
+```bash
+make docker-run
+```
+
+The app will be available at `http://localhost:8501`.
+
 ## Index maintenance
 
 The pipeline can be rerun safely as the source collection changes. Its three update modes
@@ -155,6 +213,8 @@ smoke run before evaluating the complete dataset.
 ├── llm_client.py              # Grounded response generation
 ├── rag_client.py              # Collection discovery and semantic retrieval
 ├── ragas_evaluator.py         # RAGAS and deterministic evaluation metrics
+├── Dockerfile                 # Optional containerized Streamlit runtime
+├── Makefile                   # Local workflow shortcuts
 └── tests/                     # Focused offline tests
 ```
 
